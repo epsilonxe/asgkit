@@ -1,0 +1,24 @@
+export interface Course {
+  id: number;
+  name: string;
+  slug: string;
+  created_at: string;
+}
+
+export interface Workshop {
+  id: number;
+  course_id: number;
+  name: string;
+  slug: string;
+  created_at: string;
+}
+
+export interface Submission {
+  id: number;
+  workshop_id: number;
+  student_id: string;
+  file_names: string[];
+  submitted_at: string;
+  client_ip: string | null;
+  client_mac: string | null;
+}

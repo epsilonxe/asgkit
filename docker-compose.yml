@@ -1,0 +1,46 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: asgkit
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    # Published to the host (not just the compose network) because the app
+    # service below runs with network_mode: host and can't use compose's
+    # internal service-name DNS.
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    # Required (Linux host only) so the app can see real client IPs/ARP
+    # entries for MAC address capture. Not viable on Docker Desktop
+    # (macOS/Windows) - see CLAUDE.md "Known Limitations".
+    network_mode: host
+    environment:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: asgkit
+      UPLOADS_BASE: /data/uploads
+      PORT: 3000
+    volumes:
+      - ./uploads:/data/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
