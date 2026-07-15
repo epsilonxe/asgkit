@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { formatBytes } from "@/lib/formatBytes";
 
 type StagedFile = { file: File; relativePath: string };
 
@@ -44,12 +45,6 @@ async function collectEntry(
       await collectEntry(child, relativePath, out);
     }
   }
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function SubmissionForm({

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { promises as fs } from "fs";
+import path from "path";
 import { pool } from "@/lib/db";
 import {
   resolveSubmissionDir,
@@ -10,6 +12,51 @@ import { isValidSlug } from "@/lib/validation";
 import { getClientIp } from "@/lib/net/clientIp";
 import { lookupClientMac } from "@/lib/net/clientMac";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
+
+export async function GET(request: NextRequest) {
+  const workshopId = request.nextUrl.searchParams.get("workshopId");
+  if (!workshopId) {
+    return NextResponse.json({ error: "workshopId is required" }, { status: 400 });
+  }
+
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT submissions.*, workshops.slug AS workshop_slug, courses.slug AS course_slug
+     FROM submissions
+     JOIN workshops ON workshops.id = submissions.workshop_id
+     JOIN courses ON courses.id = workshops.course_id
+     WHERE submissions.workshop_id = ?
+     ORDER BY submitted_at DESC`,
+    [workshopId]
+  );
+
+  const submissions = await Promise.all(
+    rows.map(async (row) => {
+      const dir = resolveSubmissionDir(row.course_slug, row.student_id, row.workshop_slug);
+      const files = await Promise.all(
+        (row.file_names as string[]).map(async (relPath) => {
+          try {
+            const stat = await fs.stat(path.join(dir, relPath));
+            return { name: relPath, size: stat.size };
+          } catch {
+            // File missing on disk (e.g. deleted out-of-band) - don't fail the whole list.
+            return { name: relPath, size: null as number | null };
+          }
+        })
+      );
+      return {
+        id: row.id,
+        workshop_id: row.workshop_id,
+        student_id: row.student_id,
+        submitted_at: row.submitted_at,
+        client_ip: row.client_ip,
+        client_mac: row.client_mac,
+        files,
+      };
+    })
+  );
+
+  return NextResponse.json(submissions);
+}
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();

@@ -36,6 +36,7 @@ services:
       DB_NAME: asgkit
       UPLOADS_BASE: /data/uploads
       PORT: 3000
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
       - ./uploads:/data/uploads
     depends_on:

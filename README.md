@@ -1,9 +1,10 @@
 # asgkit
 
 Student assignment management webapp: courses → workshops → student
-submissions. Local-network only, no auth. See `CLAUDE.md` for the full
-spec and architecture rationale (written for AI agents working in this
-repo, but useful background for humans too).
+submissions. Local-network only. Student submission is unauthenticated;
+the admin area is password-protected. See `CLAUDE.md` for the full spec
+and architecture rationale (written for AI agents working in this repo,
+but useful background for humans too).
 
 ## Stack
 
@@ -37,7 +38,9 @@ npm run dev                  # runs server.js, required for real client-IP captu
 ```
 
 App: http://localhost:3000
-Admin (create courses/workshops): http://localhost:3000/admin
+Admin (create courses/workshops): http://localhost:3000/admin — prompts
+for HTTP Basic Auth credentials (username `admin`, password from
+`ADMIN_PASSWORD` in `.env`).
 
 ## Full stack via Docker
 
@@ -63,7 +66,8 @@ must target an actual Linux host.
    a reboot — no separate systemd unit needed for the app itself.
 2. Copy or clone this repo onto the target machine.
 3. `cp .env.example .env` and set real (non-`changeme`) values for
-   `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD`.
+   `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD`, and
+   `ADMIN_PASSWORD`.
 4. `docker compose up -d --build`
 5. If a firewall is active, open ports 3000 and 3306 to the LAN, e.g.:
    ```bash
@@ -100,8 +104,8 @@ workaround via **mirrored networking mode**:
    version; check Experimental Features if not shown directly). Apply and
    restart Docker Desktop.
 4. **Deploy the app** — same as the Linux path: clone/copy this repo,
-   `cp .env.example .env` and set real passwords, then
-   `docker compose up -d --build`.
+   `cp .env.example .env` and set real passwords (including
+   `ADMIN_PASSWORD`), then `docker compose up -d --build`.
 5. **Verify the container picked up the real network**:
    ```bash
    docker compose exec app ip addr
@@ -145,6 +149,18 @@ uploads/COURSE_SLUG/STUDENT_ID/WORKSHOP_SLUG/
 Base path is configurable via `UPLOADS_BASE`. Per-file size cap is 50MB
 (`src/lib/fsStorage.ts`).
 
+## Admin authentication
+
+`/admin` pages and the admin-only API routes (`/api/courses/*`,
+`/api/workshops/*`, `GET /api/submissions`) require HTTP Basic Auth,
+enforced in `src/middleware.ts` — username is always `admin`, password
+comes from the `ADMIN_PASSWORD` env var. This is a single shared
+credential, not per-user accounts, consistent with the app's small,
+internal-tool scope. The public student submission endpoint
+(`POST /api/submissions`) is explicitly exempted and stays unauthenticated.
+If `ADMIN_PASSWORD` is unset, admin access fails closed (returns 401
+rather than silently allowing access).
+
 ## Client IP / MAC capture
 
 `server.js` stamps every incoming request with a trusted internal header
@@ -174,3 +190,4 @@ docker compose down
 | `UPLOADS_BASE` | app | Base directory for submission files |
 | `PORT` | app | Port `server.js` listens on (default 3000) |
 | `MYSQL_ROOT_PASSWORD` / `MYSQL_USER` / `MYSQL_PASSWORD` | compose only | Passed to the `mysql` service; set in `.env` (see `.env.example`) |
+| `ADMIN_PASSWORD` | app | HTTP Basic Auth password for `/admin` and admin API routes (`src/middleware.ts`); username is always `admin` |
