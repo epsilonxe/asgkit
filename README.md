@@ -78,6 +78,51 @@ must target an actual Linux host.
    it's expected to legitimately stay null (cross-subnet clients, VPNs,
    stale ARP entries).
 
+## Deploying on Windows (Docker Desktop + WSL2 mirrored networking)
+
+Docker Desktop's `network_mode: host` does **not** work out of the box on
+Windows — it binds inside Docker Desktop's hidden WSL2 VM, not Windows'
+real network stack, so the app is unreachable at `localhost` and can never
+see real LAN client IPs/MACs. Newer Windows/WSL2 versions offer a
+workaround via **mirrored networking mode**:
+
+1. **Prerequisites**: Windows 11 22H2+ (build 22621+), WSL ≥ 2.0.0. Check
+   with `wsl --version`; run `wsl --update` if older.
+2. **Enable mirrored networking** — create/edit
+   `%USERPROFILE%\.wslconfig`:
+   ```ini
+   [wsl2]
+   networkingMode=mirrored
+   ```
+   Then, in PowerShell: `wsl --shutdown`, and fully restart Docker Desktop.
+3. **Enable host networking in Docker Desktop** — Settings → Resources →
+   Network → enable "Enable host networking" (wording/location varies by
+   version; check Experimental Features if not shown directly). Apply and
+   restart Docker Desktop.
+4. **Deploy the app** — same as the Linux path: clone/copy this repo,
+   `cp .env.example .env` and set real passwords, then
+   `docker compose up -d --build`.
+5. **Verify the container picked up the real network**:
+   ```bash
+   docker compose exec app ip addr
+   ```
+   You should see the host's real interfaces/IP, not an isolated bridge
+   address (e.g. `172.x`).
+6. **Windows Defender Firewall** — once the container is on the real
+   interface, Windows may prompt to allow inbound connections; allow it,
+   or manually add inbound rules for TCP 3000 and 3306.
+7. **Verify reachability** from another LAN device:
+   `http://<windows-host-lan-ip>:3000` and `.../admin`.
+8. **Verify MAC capture** by submitting from a real second LAN device and
+   checking `client_mac` is populated in the `submissions` table.
+
+This Docker Desktop feature is newer and version-dependent. If the
+"Enable host networking" toggle isn't present, or containers still don't
+pick up the real interface after these steps, that's a Docker Desktop
+limitation on that specific version — not something fixable from the app
+side. The reliable fallback is a native Linux host, or a Linux VM with
+bridged (not NAT) networking, per the section above.
+
 ## Data model
 
 Courses → workshops → submissions (see `db/init.sql` for the source of
