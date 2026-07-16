@@ -20,6 +20,12 @@ export const metadata: Metadata = {
   description: "Local Assignment Manager",
 };
 
+// Every page needs this layout, which reads settings from a live DB -
+// force dynamic rendering here so no page can be statically prerendered
+// (which would require a DB connection at build time, unavailable during
+// `docker build`).
+export const dynamic = "force-dynamic";
+
 // Runs before first paint so "system" theme never flashes the wrong
 // mode - class-based dark mode doesn't auto-follow the OS by itself.
 const NO_FLASH_SCRIPT = `(function(){try{if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark');}}catch(e){}})();`;
