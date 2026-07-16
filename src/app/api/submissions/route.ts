@@ -11,22 +11,25 @@ import {
 import { isValidSlug } from "@/lib/validation";
 import { getClientIp } from "@/lib/net/clientIp";
 import { lookupClientMac } from "@/lib/net/clientMac";
+import { getSettings } from "@/lib/settings";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export async function GET(request: NextRequest) {
   const workshopId = request.nextUrl.searchParams.get("workshopId");
-  if (!workshopId) {
-    return NextResponse.json({ error: "workshopId is required" }, { status: 400 });
+  const courseId = request.nextUrl.searchParams.get("courseId");
+  if (!workshopId && !courseId) {
+    return NextResponse.json({ error: "workshopId or courseId is required" }, { status: 400 });
   }
 
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT submissions.*, workshops.slug AS workshop_slug, courses.slug AS course_slug
+    `SELECT submissions.*, workshops.slug AS workshop_slug, workshops.name AS workshop_name,
+            courses.slug AS course_slug
      FROM submissions
      JOIN workshops ON workshops.id = submissions.workshop_id
      JOIN courses ON courses.id = workshops.course_id
-     WHERE submissions.workshop_id = ?
+     WHERE ${workshopId ? "submissions.workshop_id = ?" : "workshops.course_id = ?"}
      ORDER BY submitted_at DESC`,
-    [workshopId]
+    [workshopId ?? courseId]
   );
 
   const submissions = await Promise.all(
@@ -46,6 +49,7 @@ export async function GET(request: NextRequest) {
       return {
         id: row.id,
         workshop_id: row.workshop_id,
+        workshop_name: row.workshop_name,
         student_id: row.student_id,
         submitted_at: row.submitted_at,
         client_ip: row.client_ip,
@@ -102,7 +106,8 @@ export async function POST(request: NextRequest) {
 
   let fileNames: string[];
   try {
-    fileNames = await writeSubmissionFiles(dir, files);
+    const { maxFileSizeMb } = await getSettings();
+    fileNames = await writeSubmissionFiles(dir, files, maxFileSizeMb * 1024 * 1024);
   } catch (err) {
     if (err instanceof FileTooLargeError) {
       return NextResponse.json({ error: err.message }, { status: 413 });

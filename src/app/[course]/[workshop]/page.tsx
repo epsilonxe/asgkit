@@ -1,8 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pool } from "@/lib/db";
 import type { Course, Workshop } from "@/types/domain";
 import type { RowDataPacket } from "mysql2";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { getSettings } from "@/lib/settings";
+import { UploadCloud } from "lucide-react";
 import SubmissionForm from "./SubmissionForm";
 
 export const dynamic = "force-dynamic";
@@ -28,15 +30,22 @@ export default async function WorkshopSubmissionPage({
   const workshop = workshopRows[0] as Workshop | undefined;
   if (!workshop) notFound();
 
+  const { maxFileSizeMb } = await getSettings();
+
   return (
-    <main className="mx-auto max-w-xl p-8">
-      <Link href={`/${course.slug}`} className="text-sm text-gray-500 hover:underline">
-        ← {course.name}
-      </Link>
+    <main className="mx-auto max-w-2xl p-8">
+      <Breadcrumbs items={[{ label: course.name, href: `/${course.slug}` }, { label: workshop.name }]} />
 
-      <h1 className="mt-2 mb-6 text-2xl font-semibold">{workshop.name}</h1>
+      <h1 className="mt-2 mb-6 flex items-center gap-2 text-2xl font-semibold">
+        <UploadCloud className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        Submit to Workshop
+      </h1>
 
-      <SubmissionForm courseSlug={course.slug} workshopSlug={workshop.slug} />
+      <SubmissionForm
+        courseSlug={course.slug}
+        workshopSlug={workshop.slug}
+        maxFileSizeMb={maxFileSizeMb}
+      />
     </main>
   );
 }

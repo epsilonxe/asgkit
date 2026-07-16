@@ -2,6 +2,9 @@
 
 import { useRef, useState } from "react";
 import { formatBytes } from "@/lib/formatBytes";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { AlertCircle, CheckCircle2, Trash2, UploadCloud, X } from "lucide-react";
 
 type StagedFile = { file: File; relativePath: string };
 
@@ -50,9 +53,11 @@ async function collectEntry(
 export default function SubmissionForm({
   courseSlug,
   workshopSlug,
+  maxFileSizeMb,
 }: {
   courseSlug: string;
   workshopSlug: string;
+  maxFileSizeMb: number;
 }) {
   const [studentId, setStudentId] = useState("");
   const [items, setItems] = useState<StagedFile[]>([]);
@@ -144,22 +149,20 @@ export default function SubmissionForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="mb-1 block text-sm font-medium">Student ID</label>
-        <input
-          className="w-full rounded border px-3 py-2"
-          value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-          placeholder="e.g. s12345"
-          required
-        />
-        <p className="mt-1 text-xs text-gray-400">
-          Letters, numbers, dashes and underscores only.
-        </p>
-      </div>
+      <Input
+        id="studentId"
+        label="Student ID"
+        value={studentId}
+        onChange={(e) => setStudentId(e.target.value)}
+        placeholder="e.g. s12345"
+        hint="Letters, numbers, dashes and underscores only."
+        required
+      />
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Files</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
+          Files
+        </label>
 
         <div
           onDragOver={(e) => {
@@ -168,12 +171,23 @@ export default function SubmissionForm({
           }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
-          className={`rounded border-2 border-dashed px-4 py-6 text-center text-sm ${
-            dragging ? "border-black bg-gray-50" : "border-gray-300 text-gray-500"
+          onClick={() => fileInputRef.current?.click()}
+          className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 text-center text-sm transition-colors ${
+            dragging
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+              : "border-slate-300 text-slate-500 dark:border-slate-600 dark:text-slate-400"
           }`}
         >
-          Drag & drop files or a folder here
+          <UploadCloud className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+          <span>
+            Drag & drop files here
+            <br />
+            or <span className="text-blue-600 hover:underline dark:text-blue-400">click to browse</span>
+          </span>
         </div>
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+          You can upload multiple files. Max {maxFileSizeMb}MB per file.
+        </p>
 
         <input
           ref={fileInputRef}
@@ -182,40 +196,33 @@ export default function SubmissionForm({
           onChange={handleFileInputChange}
           className="hidden"
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="mt-2 rounded border px-4 py-2 hover:bg-gray-50"
-        >
-          Browse files
-        </button>
 
         {items.length > 0 && (
           <div className="mt-3">
-            <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+            <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
               <span>{items.length} file(s) staged</span>
-              <button
-                type="button"
-                onClick={() => setItems([])}
-                className="text-red-600 hover:underline"
-              >
+              <Button type="button" variant="danger-link" icon={Trash2} onClick={() => setItems([])}>
                 Clear all
-              </button>
+              </Button>
             </div>
-            <ul className="max-h-40 space-y-1 overflow-y-auto rounded border p-2 text-sm">
+            <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-2 text-sm dark:border-slate-700">
               {items.map((item, i) => (
                 <li key={`${item.relativePath}-${i}`} className="flex items-center justify-between">
                   <span className="truncate">
                     {item.relativePath}{" "}
-                    <span className="text-gray-400">({formatBytes(item.file.size)})</span>
+                    <span className="text-slate-400 dark:text-slate-500">
+                      ({formatBytes(item.file.size)})
+                    </span>
                   </span>
-                  <button
+                  <Button
                     type="button"
+                    variant="danger-link"
+                    icon={X}
                     onClick={() => removeItem(i)}
-                    className="ml-2 text-red-600 hover:underline"
+                    className="ml-2"
                   >
                     remove
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -223,17 +230,20 @@ export default function SubmissionForm({
         )}
       </div>
 
-      <button
-        disabled={submitting}
-        className="rounded bg-black px-4 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
-      >
-        {submitting ? "Submitting…" : "Submit"}
-      </button>
+      <Button type="submit" icon={UploadCloud} disabled={submitting}>
+        {submitting ? "Uploading…" : "Upload Submission"}
+      </Button>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && (
+        <p className="flex items-center gap-2 text-red-600 dark:text-red-400">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </p>
+      )}
 
       {result && (
-        <p className="text-green-700">
+        <p className="flex items-center gap-2 text-green-700 dark:text-green-400">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
           Submitted {result.fileNames.join(", ")} at{" "}
           {new Date(result.submittedAt).toLocaleString()}
         </p>

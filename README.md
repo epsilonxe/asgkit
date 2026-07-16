@@ -1,10 +1,11 @@
 # asgkit
 
-Student assignment management webapp: courses → workshops → student
-submissions. Local-network only. Student submission is unauthenticated;
-the admin area is password-protected. See `CLAUDE.md` for the full spec
-and architecture rationale (written for AI agents working in this repo,
-but useful background for humans too).
+**Workshop Hub — Local Assignment Manager.** Student assignment
+management webapp: courses → workshops → student submissions.
+Local-network only. Student submission is unauthenticated; the admin
+area is password-protected. See `CLAUDE.md` for the full spec and
+architecture rationale (written for AI agents working in this repo, but
+useful background for humans too).
 
 ## Stack
 

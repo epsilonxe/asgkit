@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
-import type { Course, Submission, Workshop } from "@/types/domain";
-import { formatBytes } from "@/lib/formatBytes";
-
-type SubmissionWithFiles = Omit<Submission, "file_names"> & {
-  files: { name: string; size: number | null }[];
-};
+import type { Course, Workshop } from "@/types/domain";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Loading } from "@/components/ui/Loading";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { SubmissionsTable, type SubmissionWithFiles } from "@/components/SubmissionsTable";
+import { Save } from "lucide-react";
 
 export default function AdminWorkshopPage({
   params,
@@ -49,79 +50,45 @@ export default function AdminWorkshopPage({
     await load();
   }
 
-  if (!workshop || !course) return <main className="mx-auto max-w-2xl p-8">Loading…</main>;
+  if (!workshop || !course)
+    return (
+      <main className="mx-auto max-w-3xl p-8">
+        <Loading />
+      </main>
+    );
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <Link href={`/admin/courses/${course.id}`} className="text-sm text-gray-500 hover:underline">
-        ← {course.name}
-      </Link>
+      <Breadcrumbs
+        items={[
+          { label: "Courses", href: "/admin/courses" },
+          { label: course.name, href: `/admin/courses/${course.id}` },
+          { label: workshop.name },
+        ]}
+      />
 
       <h1 className="mt-2 mb-6 text-2xl font-semibold">
-        {workshop.name} <span className="text-gray-400">({workshop.slug})</span>
+        {workshop.name}{" "}
+        <span className="text-slate-400 dark:text-slate-500">({workshop.slug})</span>
       </h1>
 
       <form onSubmit={saveName} className="mb-8 flex gap-2">
-        <input
-          className="flex-1 rounded border px-3 py-2"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button className="rounded bg-black px-4 py-2 text-white hover:bg-gray-800">
+        <Input wrapperClassName="flex-1" value={name} onChange={(e) => setName(e.target.value)} />
+        <Button type="submit" icon={Save}>
           Save name
-        </button>
+        </Button>
       </form>
 
       <Link
         href={`/${course.slug}/${workshop.slug}`}
-        className="text-sm text-blue-600 hover:underline"
+        className="text-sm text-blue-600 hover:underline dark:text-blue-400"
       >
         View submission page →
       </Link>
 
-      <h2 className="mt-8 mb-4 text-xl font-medium">Submissions</h2>
+      <h2 className="mt-8 mb-4 text-lg font-medium">Submissions</h2>
 
-      {submissions.length === 0 ? (
-        <p className="text-gray-500">No submissions yet.</p>
-      ) : (
-        <div className="overflow-x-auto rounded border">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 py-2 font-medium">Student ID</th>
-                <th className="px-3 py-2 font-medium">Submitted At</th>
-                <th className="px-3 py-2 font-medium">Files</th>
-                <th className="px-3 py-2 font-medium">Client IP</th>
-                <th className="px-3 py-2 font-medium">Client MAC</th>
-              </tr>
-            </thead>
-            <tbody>
-              {submissions.map((s) => (
-                <tr key={s.id} className="border-t align-top">
-                  <td className="px-3 py-2">{s.student_id}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {new Date(s.submitted_at).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2">
-                    <ul className="space-y-0.5">
-                      {s.files.map((f) => (
-                        <li key={f.name}>
-                          {f.name}{" "}
-                          <span className="text-gray-400">
-                            ({f.size !== null ? formatBytes(f.size) : "missing"})
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                  <td className="px-3 py-2">{s.client_ip ?? "—"}</td>
-                  <td className="px-3 py-2">{s.client_mac ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <SubmissionsTable submissions={submissions} />
     </main>
   );
 }

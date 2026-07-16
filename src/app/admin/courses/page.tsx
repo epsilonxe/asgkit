@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Course } from "@/types/domain";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Panel } from "@/components/ui/Panel";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Loading } from "@/components/ui/Loading";
+import { Plus, Trash2 } from "lucide-react";
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -46,44 +52,42 @@ export default function AdminCoursesPage() {
 
   return (
     <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-semibold mb-6">Courses</h1>
+      <h1 className="mb-6 text-2xl font-semibold">Courses</h1>
 
       <form onSubmit={createCourse} className="mb-8 flex gap-2">
-        <input
-          className="flex-1 rounded border px-3 py-2"
+        <Input
+          wrapperClassName="flex-1"
           placeholder="Course name"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <button className="rounded bg-black px-4 py-2 text-white hover:bg-gray-800">
+        <Button type="submit" icon={Plus}>
           Add
-        </button>
+        </Button>
       </form>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-red-600 dark:text-red-400">{error}</p>}
 
       {loading ? (
-        <p>Loading…</p>
+        <Loading />
       ) : courses.length === 0 ? (
-        <p className="text-gray-500">No courses yet.</p>
+        <EmptyState>No courses yet.</EmptyState>
       ) : (
-        <ul className="space-y-2">
+        <div className="space-y-2">
           {courses.map((c) => (
-            <li
-              key={c.id}
-              className="flex items-center justify-between rounded border px-4 py-2"
-            >
-              <Link href={`/admin/courses/${c.id}`} className="hover:underline">
-                {c.name} <span className="text-gray-400">({c.slug})</span>
-              </Link>
-              <button
-                onClick={() => deleteCourse(c.id)}
-                className="text-sm text-red-600 hover:underline"
+            <Panel key={c.id} className="flex items-center justify-between gap-4">
+              <Link
+                href={`/admin/courses/${c.id}`}
+                className="text-blue-600 hover:underline dark:text-blue-400"
               >
+                {c.name}{" "}
+                <span className="text-slate-400 dark:text-slate-500">({c.slug})</span>
+              </Link>
+              <Button variant="danger-link" icon={Trash2} onClick={() => deleteCourse(c.id)}>
                 Delete
-              </button>
-            </li>
+              </Button>
+            </Panel>
           ))}
-        </ul>
+        </div>
       )}
     </main>
   );

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { pool } from "@/lib/db";
 import type { Course, Workshop } from "@/types/domain";
 import type { RowDataPacket } from "mysql2";
+import { Panel } from "@/components/ui/Panel";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export const dynamic = "force-dynamic";
 
@@ -28,24 +30,30 @@ export default async function CoursePage({
 
   return (
     <main className="mx-auto max-w-2xl p-8">
-      <Link href="/" className="text-sm text-gray-500 hover:underline">
+      <Link
+        href="/"
+        className="text-sm text-slate-500 hover:underline dark:text-slate-400"
+      >
         ← All courses
       </Link>
 
       <h1 className="mt-2 mb-6 text-2xl font-semibold">{course.name}</h1>
 
       {workshops.length === 0 ? (
-        <p className="text-gray-500">No workshops yet.</p>
+        <EmptyState>No workshops yet.</EmptyState>
       ) : (
-        <ul className="space-y-2">
+        <div className="space-y-2">
           {workshops.map((w) => (
-            <li key={w.id} className="rounded border px-4 py-2">
-              <Link href={`/${course.slug}/${w.slug}`} className="hover:underline">
+            <Panel key={w.id}>
+              <Link
+                href={`/${course.slug}/${w.slug}`}
+                className="text-blue-600 hover:underline dark:text-blue-400"
+              >
                 {w.name}
               </Link>
-            </li>
+            </Panel>
           ))}
-        </ul>
+        </div>
       )}
     </main>
   );

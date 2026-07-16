@@ -30,3 +30,12 @@ CREATE TABLE submissions (
   FOREIGN KEY (workshop_id) REFERENCES workshops(id) ON DELETE CASCADE,
   UNIQUE KEY uq_submission_workshop_student (workshop_id, student_id)
 );
+
+-- Single-row table for app-wide settings (not a generic key-value store,
+-- since there are only a couple of typed settings).
+CREATE TABLE app_settings (
+  id                INT PRIMARY KEY DEFAULT 1,
+  max_file_size_mb  INT NOT NULL DEFAULT 50,
+  theme             ENUM('light', 'dark', 'system') NOT NULL DEFAULT 'system'
+);
+INSERT INTO app_settings (id) VALUES (1);

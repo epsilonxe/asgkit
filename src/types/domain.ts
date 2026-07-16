@@ -16,6 +16,7 @@ export interface Workshop {
 export interface Submission {
   id: number;
   workshop_id: number;
+  workshop_name: string;
   student_id: string;
   file_names: string[];
   submitted_at: string;

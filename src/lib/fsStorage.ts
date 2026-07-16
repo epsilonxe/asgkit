@@ -2,16 +2,17 @@ import { promises as fs } from "fs";
 import path from "path";
 import { isValidSlug } from "@/lib/validation";
 
-export const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
-
 const UPLOADS_BASE = path.resolve(
   process.env.UPLOADS_BASE ?? path.join(process.cwd(), "uploads")
 );
 
 export class InvalidSegmentError extends Error {}
 export class FileTooLargeError extends Error {
-  constructor(public fileName: string) {
-    super(`file "${fileName}" exceeds the ${MAX_FILE_SIZE_BYTES} byte limit`);
+  constructor(
+    public fileName: string,
+    maxFileSizeBytes: number
+  ) {
+    super(`file "${fileName}" exceeds the ${maxFileSizeBytes} byte limit`);
   }
 }
 
@@ -68,11 +69,12 @@ export function resolveSubmissionDir(
 // then writes the given files. Never leaves a mix of old and new files.
 export async function writeSubmissionFiles(
   dir: string,
-  files: File[]
+  files: File[],
+  maxFileSizeBytes: number
 ): Promise<string[]> {
   for (const file of files) {
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      throw new FileTooLargeError(file.name);
+    if (file.size > maxFileSizeBytes) {
+      throw new FileTooLargeError(file.name, maxFileSizeBytes);
     }
   }
 
