@@ -37,6 +37,7 @@ export function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={link.href === "/admin" ? false : undefined}
                   className={active ? "text-blue-400" : "text-slate-300 hover:text-white"}
                 >
                   {link.label}
