@@ -82,6 +82,20 @@ truth). Notes:
 - Resubmitting overwrites in place: old files under the student's
   submission directory are deleted before the new ones are written, and the
   DB row is updated via `ON DUPLICATE KEY UPDATE` (same `id`, not a new row).
+- Each workshop has an `is_open` flag (default open) controlling whether its
+  public submission page accepts uploads; toggled from the admin UI.
+
+### Upgrading an existing deployment
+
+`db/init.sql` only runs against a **fresh** `mysql_data` volume (MySQL skips
+`docker-entrypoint-initdb.d` once the data directory is initialized). If you
+already have a running deployment from before the `is_open` column existed,
+apply it manually:
+
+```sql
+ALTER TABLE workshops ADD COLUMN is_open TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE app_settings ADD COLUMN rows_per_page INT NOT NULL DEFAULT 5;
+```
 
 ## File storage
 

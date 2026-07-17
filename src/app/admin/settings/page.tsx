@@ -19,6 +19,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [maxFileSizeMb, setMaxFileSizeMb] = useState(50);
   const [theme, setTheme] = useState<Theme>("system");
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export default function AdminSettingsPage() {
       const data = await res.json();
       setMaxFileSizeMb(data.maxFileSizeMb);
       setTheme(data.theme);
+      setRowsPerPage(data.rowsPerPage);
       setLoading(false);
     })();
   }, []);
@@ -42,7 +44,7 @@ export default function AdminSettingsPage() {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maxFileSizeMb, theme }),
+        body: JSON.stringify({ maxFileSizeMb, theme, rowsPerPage }),
       });
       if (!res.ok) {
         const body = await res.json();
@@ -88,6 +90,16 @@ export default function AdminSettingsPage() {
           value={maxFileSizeMb}
           onChange={(e) => setMaxFileSizeMb(Number(e.target.value))}
           hint="Applies to each uploaded file on the student submission page."
+        />
+
+        <Input
+          id="rowsPerPage"
+          label="Rows per page"
+          type="number"
+          min={1}
+          value={rowsPerPage}
+          onChange={(e) => setRowsPerPage(Number(e.target.value))}
+          hint="Applies to every sortable table across the app (courses, submissions, etc.)."
         />
 
         <div>

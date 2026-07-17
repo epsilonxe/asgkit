@@ -5,16 +5,19 @@ import { useEffect, useState } from "react";
 import type { Course } from "@/types/domain";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Panel } from "@/components/ui/Panel";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { Loading } from "@/components/ui/Loading";
+import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
+import { useRowsPerPage } from "@/lib/useRowsPerPage";
 import { Plus, Trash2 } from "lucide-react";
 
+type CourseRow = Course & { workshop_count: number; submission_count: number };
+
 export default function AdminCoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<CourseRow[]>([]);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { rowsPerPage } = useRowsPerPage();
 
   async function load() {
     const res = await fetch("/api/courses");
@@ -50,8 +53,54 @@ export default function AdminCoursesPage() {
     await load();
   }
 
+  const columns: DataTableColumn<CourseRow>[] = [
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+      render: (c) => (
+        <Link href={`/admin/courses/${c.id}`} className="text-blue-600 hover:underline dark:text-blue-400">
+          {c.name}
+        </Link>
+      ),
+    },
+    {
+      key: "slug",
+      label: "Slug",
+      sortable: true,
+      render: (c) => <span className="text-slate-400 dark:text-slate-500">{c.slug}</span>,
+    },
+    {
+      key: "workshop_count",
+      label: "Workshops",
+      sortable: true,
+      render: (c) => c.workshop_count,
+    },
+    {
+      key: "submission_count",
+      label: "Submissions",
+      sortable: true,
+      render: (c) => c.submission_count,
+    },
+    {
+      key: "created_at",
+      label: "Created",
+      sortable: true,
+      render: (c) => new Date(c.created_at).toLocaleString(),
+    },
+    {
+      key: "actions",
+      label: "",
+      render: (c) => (
+        <Button variant="danger-link" icon={Trash2} onClick={() => deleteCourse(c.id)}>
+          Delete
+        </Button>
+      ),
+    },
+  ];
+
   return (
-    <main className="mx-auto max-w-2xl p-8">
+    <main className="mx-auto max-w-4xl p-8">
       <h1 className="mb-6 text-2xl font-semibold">Courses</h1>
 
       <form onSubmit={createCourse} className="mb-8 flex gap-2">
@@ -69,25 +118,14 @@ export default function AdminCoursesPage() {
 
       {loading ? (
         <Loading />
-      ) : courses.length === 0 ? (
-        <EmptyState>No courses yet.</EmptyState>
       ) : (
-        <div className="space-y-2">
-          {courses.map((c) => (
-            <Panel key={c.id} className="flex items-center justify-between gap-4">
-              <Link
-                href={`/admin/courses/${c.id}`}
-                className="text-blue-600 hover:underline dark:text-blue-400"
-              >
-                {c.name}{" "}
-                <span className="text-slate-400 dark:text-slate-500">({c.slug})</span>
-              </Link>
-              <Button variant="danger-link" icon={Trash2} onClick={() => deleteCourse(c.id)}>
-                Delete
-              </Button>
-            </Panel>
-          ))}
-        </div>
+        <DataTable
+          rows={courses}
+          columns={columns}
+          rowsPerPage={rowsPerPage}
+          getRowKey={(c) => c.id}
+          emptyMessage="No courses yet."
+        />
       )}
     </main>
   );

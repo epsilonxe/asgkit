@@ -36,6 +36,7 @@ CREATE TABLE submissions (
 CREATE TABLE app_settings (
   id                INT PRIMARY KEY DEFAULT 1,
   max_file_size_mb  INT NOT NULL DEFAULT 50,
-  theme             ENUM('light', 'dark', 'system') NOT NULL DEFAULT 'system'
+  theme             ENUM('light', 'dark', 'system') NOT NULL DEFAULT 'system',
+  rows_per_page     INT NOT NULL DEFAULT 5
 );
 INSERT INTO app_settings (id) VALUES (1);

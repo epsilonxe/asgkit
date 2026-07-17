@@ -1,6 +1,6 @@
 import type { Submission } from "@/types/domain";
 import { formatBytes } from "@/lib/formatBytes";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 
 export type SubmissionWithFiles = Omit<Submission, "file_names"> & {
   files: { name: string; size: number | null }[];
@@ -9,53 +9,69 @@ export type SubmissionWithFiles = Omit<Submission, "file_names"> & {
 export function SubmissionsTable({
   submissions,
   showWorkshopColumn = false,
+  rowsPerPage,
 }: {
   submissions: SubmissionWithFiles[];
   showWorkshopColumn?: boolean;
+  rowsPerPage: number;
 }) {
-  if (submissions.length === 0) {
-    return <EmptyState>No submissions yet.</EmptyState>;
-  }
+  const columns: DataTableColumn<SubmissionWithFiles>[] = [
+    {
+      key: "student_id",
+      label: "Student ID",
+      sortable: true,
+      render: (s) => s.student_id,
+    },
+    ...(showWorkshopColumn
+      ? [
+          {
+            key: "workshop_name",
+            label: "Workshop",
+            sortable: true,
+            render: (s: SubmissionWithFiles) => s.workshop_name,
+          } satisfies DataTableColumn<SubmissionWithFiles>,
+        ]
+      : []),
+    {
+      key: "submitted_at",
+      label: "Submitted At",
+      sortable: true,
+      className: "whitespace-nowrap",
+      render: (s) => new Date(s.submitted_at).toLocaleString(),
+    },
+    {
+      key: "files",
+      label: "Files",
+      render: (s) => (
+        <ul className="space-y-0.5">
+          {s.files.map((f) => (
+            <li key={f.name}>
+              {f.name}{" "}
+              <span className="text-slate-400 dark:text-slate-500">
+                ({f.size !== null ? formatBytes(f.size) : "missing"})
+              </span>
+            </li>
+          ))}
+        </ul>
+      ),
+    },
+    {
+      key: "device_id",
+      label: "Device ID",
+      className: "font-mono text-xs",
+      render: (s) => (
+        <span title={s.device_id ?? undefined}>{s.device_id ? s.device_id.slice(0, 8) : "—"}</span>
+      ),
+    },
+  ];
 
   return (
-    <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-700">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 dark:bg-slate-800">
-          <tr>
-            <th className="px-3 py-2 font-medium">Student ID</th>
-            {showWorkshopColumn && <th className="px-3 py-2 font-medium">Workshop</th>}
-            <th className="px-3 py-2 font-medium">Submitted At</th>
-            <th className="px-3 py-2 font-medium">Files</th>
-            <th className="px-3 py-2 font-medium">Client IP</th>
-            <th className="px-3 py-2 font-medium">Client MAC</th>
-          </tr>
-        </thead>
-        <tbody>
-          {submissions.map((s) => (
-            <tr key={s.id} className="border-t border-slate-200 align-top dark:border-slate-700">
-              <td className="px-3 py-2">{s.student_id}</td>
-              {showWorkshopColumn && <td className="px-3 py-2">{s.workshop_name}</td>}
-              <td className="px-3 py-2 whitespace-nowrap">
-                {new Date(s.submitted_at).toLocaleString()}
-              </td>
-              <td className="px-3 py-2">
-                <ul className="space-y-0.5">
-                  {s.files.map((f) => (
-                    <li key={f.name}>
-                      {f.name}{" "}
-                      <span className="text-slate-400 dark:text-slate-500">
-                        ({f.size !== null ? formatBytes(f.size) : "missing"})
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </td>
-              <td className="px-3 py-2">{s.client_ip ?? "—"}</td>
-              <td className="px-3 py-2">{s.client_mac ?? "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      rows={submissions}
+      columns={columns}
+      rowsPerPage={rowsPerPage}
+      getRowKey={(s) => s.id}
+      emptyMessage="No submissions yet."
+    />
   );
 }

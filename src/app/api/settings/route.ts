@@ -10,7 +10,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   const body = await request.json();
-  const update: { maxFileSizeMb?: number; theme?: Theme } = {};
+  const update: { maxFileSizeMb?: number; theme?: Theme; rowsPerPage?: number } = {};
 
   if (body.maxFileSizeMb !== undefined) {
     const maxFileSizeMb = Number(body.maxFileSizeMb);
@@ -31,6 +31,17 @@ export async function PATCH(request: NextRequest) {
       );
     }
     update.theme = body.theme;
+  }
+
+  if (body.rowsPerPage !== undefined) {
+    const rowsPerPage = Number(body.rowsPerPage);
+    if (!Number.isInteger(rowsPerPage) || rowsPerPage <= 0) {
+      return NextResponse.json(
+        { error: "rowsPerPage must be a positive integer" },
+        { status: 400 }
+      );
+    }
+    update.rowsPerPage = rowsPerPage;
   }
 
   await updateSettings(update);

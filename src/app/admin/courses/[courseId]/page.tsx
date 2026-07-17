@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Loading } from "@/components/ui/Loading";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SubmissionsTable, type SubmissionWithFiles } from "@/components/SubmissionsTable";
+import { useRowsPerPage } from "@/lib/useRowsPerPage";
 import { Plus, Save, Trash2, ChevronRight } from "lucide-react";
 
 type Tab = "workshops" | "submissions" | "settings";
@@ -34,6 +35,7 @@ export default function AdminCoursePage({
   const [submissions, setSubmissions] = useState<SubmissionWithFiles[]>([]);
   const [workshopName, setWorkshopName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { rowsPerPage } = useRowsPerPage();
 
   async function load() {
     const [courseRes, workshopsRes, submissionsRes] = await Promise.all([
@@ -205,7 +207,7 @@ export default function AdminCoursePage({
       {tab === "submissions" && (
         <div>
           <h2 className="mb-4 text-lg font-medium">Submissions</h2>
-          <SubmissionsTable submissions={submissions} showWorkshopColumn />
+          <SubmissionsTable submissions={submissions} showWorkshopColumn rowsPerPage={rowsPerPage} />
         </div>
       )}
 

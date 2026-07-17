@@ -9,6 +9,7 @@ import { Loading } from "@/components/ui/Loading";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { Toggle } from "@/components/ui/Toggle";
 import { SubmissionsTable, type SubmissionWithFiles } from "@/components/SubmissionsTable";
+import { useRowsPerPage } from "@/lib/useRowsPerPage";
 import { Save } from "lucide-react";
 
 export default function AdminWorkshopPage({
@@ -21,6 +22,7 @@ export default function AdminWorkshopPage({
   const [course, setCourse] = useState<Course | null>(null);
   const [name, setName] = useState("");
   const [submissions, setSubmissions] = useState<SubmissionWithFiles[]>([]);
+  const { rowsPerPage } = useRowsPerPage();
 
   async function load() {
     const workshopRes = await fetch(`/api/workshops/${workshopId}`);
@@ -100,7 +102,7 @@ export default function AdminWorkshopPage({
 
       <h2 className="mt-8 mb-4 text-lg font-medium">Submissions</h2>
 
-      <SubmissionsTable submissions={submissions} />
+      <SubmissionsTable submissions={submissions} rowsPerPage={rowsPerPage} />
     </main>
   );
 }

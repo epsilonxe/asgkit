@@ -5,7 +5,21 @@ import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export async function GET() {
   const [rows] = await pool.query<RowDataPacket[]>(
-    "SELECT * FROM courses ORDER BY created_at DESC"
+    `SELECT c.*, COALESCE(w.workshop_count, 0) AS workshop_count,
+            COALESCE(s.submission_count, 0) AS submission_count
+     FROM courses c
+     LEFT JOIN (
+       SELECT course_id, COUNT(*) AS workshop_count
+       FROM workshops
+       GROUP BY course_id
+     ) w ON w.course_id = c.id
+     LEFT JOIN (
+       SELECT workshops.course_id, COUNT(submissions.id) AS submission_count
+       FROM workshops
+       LEFT JOIN submissions ON submissions.workshop_id = workshops.id
+       GROUP BY workshops.course_id
+     ) s ON s.course_id = c.id
+     ORDER BY c.created_at DESC`
   );
   return NextResponse.json(rows);
 }
