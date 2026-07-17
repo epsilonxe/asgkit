@@ -4,7 +4,7 @@ import type { Course, Workshop } from "@/types/domain";
 import type { RowDataPacket } from "mysql2";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { getSettings } from "@/lib/settings";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, Lock } from "lucide-react";
 import SubmissionForm from "./SubmissionForm";
 
 export const dynamic = "force-dynamic";
@@ -41,11 +41,18 @@ export default async function WorkshopSubmissionPage({
         Submit to Workshop
       </h1>
 
-      <SubmissionForm
-        courseSlug={course.slug}
-        workshopSlug={workshop.slug}
-        maxFileSizeMb={maxFileSizeMb}
-      />
+      {workshop.is_open ? (
+        <SubmissionForm
+          courseSlug={course.slug}
+          workshopSlug={workshop.slug}
+          maxFileSizeMb={maxFileSizeMb}
+        />
+      ) : (
+        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-6 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+          <Lock className="h-5 w-5 shrink-0" />
+          This workshop is closed for submissions.
+        </div>
+      )}
     </main>
   );
 }

@@ -6,6 +6,7 @@ import type { Course, Workshop } from "@/types/domain";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
+import { Toggle } from "@/components/ui/Toggle";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Loading } from "@/components/ui/Loading";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -94,6 +95,15 @@ export default function AdminCoursePage({
     await load();
   }
 
+  async function toggleWorkshopOpen(id: number, isOpen: boolean) {
+    await fetch(`/api/workshops/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isOpen: !isOpen }),
+    });
+    await load();
+  }
+
   if (!course)
     return (
       <main className="mx-auto max-w-3xl p-8">
@@ -172,6 +182,11 @@ export default function AdminCoursePage({
                   >
                     view submission page
                   </Link>
+                  <Toggle
+                    pressed={w.is_open}
+                    onChange={() => toggleWorkshopOpen(w.id, w.is_open)}
+                    className="shrink-0"
+                  />
                   <Button
                     variant="danger-link"
                     icon={Trash2}

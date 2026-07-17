@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Loading } from "@/components/ui/Loading";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { Toggle } from "@/components/ui/Toggle";
 import { SubmissionsTable, type SubmissionWithFiles } from "@/components/SubmissionsTable";
 import { Save } from "lucide-react";
 
@@ -50,6 +51,16 @@ export default function AdminWorkshopPage({
     await load();
   }
 
+  async function toggleOpen() {
+    if (!workshop) return;
+    await fetch(`/api/workshops/${workshopId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isOpen: !workshop.is_open }),
+    });
+    await load();
+  }
+
   if (!workshop || !course)
     return (
       <main className="mx-auto max-w-3xl p-8">
@@ -67,9 +78,10 @@ export default function AdminWorkshopPage({
         ]}
       />
 
-      <h1 className="mt-2 mb-6 text-2xl font-semibold">
+      <h1 className="mt-2 mb-6 flex items-center gap-3 text-2xl font-semibold">
         {workshop.name}{" "}
         <span className="text-slate-400 dark:text-slate-500">({workshop.slug})</span>
+        <Toggle pressed={workshop.is_open} onChange={toggleOpen} />
       </h1>
 
       <form onSubmit={saveName} className="mb-8 flex gap-2">

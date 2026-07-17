@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   }
 
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT workshops.id AS workshop_id
+    `SELECT workshops.id AS workshop_id, workshops.is_open AS is_open
      FROM workshops
      JOIN courses ON courses.id = workshops.course_id
      WHERE courses.slug = ? AND workshops.slug = ?`,
@@ -93,6 +93,9 @@ export async function POST(request: NextRequest) {
   const workshopRow = rows[0];
   if (!workshopRow) {
     return NextResponse.json({ error: "workshop not found" }, { status: 404 });
+  }
+  if (!workshopRow.is_open) {
+    return NextResponse.json({ error: "this workshop is closed for submissions" }, { status: 403 });
   }
 
   let dir: string;

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     : await pool.query<RowDataPacket[]>(
         "SELECT * FROM workshops ORDER BY created_at DESC"
       );
-  return NextResponse.json(rows);
+  return NextResponse.json(rows.map((row) => ({ ...row, is_open: Boolean(row.is_open) })));
 }
 
 export async function POST(request: NextRequest) {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       [courseId, name, slug]
     );
     return NextResponse.json(
-      { id: result.insertId, course_id: courseId, name, slug },
+      { id: result.insertId, course_id: courseId, name, slug, is_open: true },
       { status: 201 }
     );
   } catch (err: unknown) {

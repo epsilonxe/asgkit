@@ -14,6 +14,7 @@ CREATE TABLE workshops (
   course_id     INT NOT NULL,
   name          VARCHAR(191) NOT NULL,
   slug          VARCHAR(191) NOT NULL,
+  is_open       TINYINT(1) NOT NULL DEFAULT 1,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
   UNIQUE KEY uq_workshops_course_slug (course_id, slug)
