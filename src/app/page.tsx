@@ -1,15 +1,10 @@
-import Link from "next/link";
 import Image from "next/image";
 import { pool } from "@/lib/db";
-import type { Course } from "@/types/domain";
 import type { RowDataPacket } from "mysql2";
-import { Panel } from "@/components/ui/Panel";
-import { StatTile } from "@/components/ui/StatTile";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
-import { countOf } from "@/lib/counts";
+import { CourseCarousel, type CourseCardData } from "@/components/CourseCarousel";
 import {
-  BookOpen,
   Layers,
   UploadCloud,
   Home as HomeIcon,
@@ -38,11 +33,34 @@ const FEATURE_STRIP = [
 ];
 
 export default async function Home() {
-  const [[courses], courseCount, workshopCount] = await Promise.all([
-    pool.query<RowDataPacket[]>("SELECT * FROM courses ORDER BY name"),
-    countOf("courses"),
-    countOf("workshops"),
-  ]);
+  const [courses] = await pool.query<RowDataPacket[]>(
+    `SELECT c.id, c.name, c.slug,
+              COALESCE(w.workshop_count, 0) AS workshop_count,
+              COALESCE(s.submission_count, 0) AS submission_count,
+              rw.name AS recent_workshop_name
+       FROM courses c
+       LEFT JOIN (
+         SELECT course_id, COUNT(*) AS workshop_count
+         FROM workshops
+         GROUP BY course_id
+       ) w ON w.course_id = c.id
+       LEFT JOIN (
+         SELECT workshops.course_id, COUNT(submissions.id) AS submission_count
+         FROM workshops
+         LEFT JOIN submissions ON submissions.workshop_id = workshops.id
+         GROUP BY workshops.course_id
+       ) s ON s.course_id = c.id
+       LEFT JOIN (
+         SELECT course_id, name
+         FROM (
+           SELECT course_id, name,
+                  ROW_NUMBER() OVER (PARTITION BY course_id ORDER BY created_at DESC) AS rn
+           FROM workshops
+         ) ranked
+         WHERE rn = 1
+       ) rw ON rw.course_id = c.id
+       ORDER BY c.name`
+  );
 
   return (
     <main className="flex-1">
@@ -139,42 +157,12 @@ export default async function Home() {
 
       {/* Courses */}
       <section id="courses" className="mx-auto max-w-5xl px-8 py-16">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr]">
-          <aside className="space-y-4">
-            <StatTile label="Courses" value={courseCount} icon={BookOpen} />
-            <StatTile label="Workshops" value={workshopCount} icon={Layers} />
-          </aside>
-
-          <div>
-            <h2 className="mb-6 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-              Courses
-            </h2>
-
-            {courses.length === 0 ? (
-              <EmptyState>No courses yet.</EmptyState>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {(courses as Course[]).map((c) => (
-                  <Link key={c.id} href={`/${c.slug}`} className="block">
-                    <Panel className="!py-4 flex items-start gap-3 transition-shadow hover:shadow-md dark:hover:border-slate-600">
-                      <div className="rounded-full bg-blue-50 p-2.5 dark:bg-blue-950/50">
-                        <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-slate-900 dark:text-slate-100">
-                          {c.name}
-                        </div>
-                        <div className="text-sm text-slate-400 dark:text-slate-500">
-                          {c.slug}
-                        </div>
-                      </div>
-                    </Panel>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <h2 className="mb-6 text-2xl font-semibold text-slate-900 dark:text-slate-100">Courses</h2>
+        {courses.length === 0 ? (
+          <EmptyState>No courses yet.</EmptyState>
+        ) : (
+          <CourseCarousel courses={courses as CourseCardData[]} />
+        )}
       </section>
 
       {/* Feature strip */}

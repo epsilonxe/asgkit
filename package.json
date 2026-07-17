@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "next dev",
     "build": "next build",
-    "start": "NODE_ENV=production node server.js",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.24.0",
     "mysql2": "^3.23.0",
     "next": "^16.2.10",
