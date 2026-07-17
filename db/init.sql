@@ -25,8 +25,7 @@ CREATE TABLE submissions (
   student_id    VARCHAR(191) NOT NULL,
   file_names    JSON NOT NULL,
   submitted_at  DATETIME NOT NULL,
-  client_ip     VARCHAR(64) NULL,
-  client_mac    VARCHAR(17) NULL,
+  device_id     VARCHAR(36) NULL,
   FOREIGN KEY (workshop_id) REFERENCES workshops(id) ON DELETE CASCADE,
   UNIQUE KEY uq_submission_workshop_student (workshop_id, student_id)
 );

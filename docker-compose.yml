@@ -7,9 +7,9 @@ services:
       MYSQL_DATABASE: asgkit
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    # Published to the host (not just the compose network) because the app
-    # service below runs with network_mode: host and can't use compose's
-    # internal service-name DNS.
+    # Published to the host for convenience (e.g. connecting a local MySQL
+    # client for debugging) - the app itself reaches mysql via the
+    # compose network below, not this published port.
     ports:
       - "3306:3306"
     volumes:
@@ -24,12 +24,10 @@ services:
   app:
     build: .
     restart: unless-stopped
-    # Required (Linux host only) so the app can see real client IPs/ARP
-    # entries for MAC address capture. Not viable on Docker Desktop
-    # (macOS/Windows) - see CLAUDE.md "Known Limitations".
-    network_mode: host
+    ports:
+      - "3000:3000"
     environment:
-      DB_HOST: 127.0.0.1
+      DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}

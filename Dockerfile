@@ -15,7 +15,7 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY package.json server.js next.config.ts ./
+COPY package.json next.config.ts ./
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["npm", "start"]

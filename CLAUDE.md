@@ -26,7 +26,7 @@ A student assignment management webapp, accessed locally only (not deployed publ
   COURSE_NAME/STUDENT_ID/WORKSHOP_NAME/FILES
   ```
 
-- The database should store metadata (courses, workshops, students, submission records) and reference file paths on disk; it should not store file contents. Each submission record must also capture the submission date/time and the MAC address of the submitting client.
+- The database should store metadata (courses, workshops, students, submission records) and reference file paths on disk; it should not store file contents. Each submission record captures the submission date/time and an anonymous per-browser `device_id` cookie (not client IP/MAC — dropped in favor of Docker portability, see Known Limitations).
 
 ## Routing
 
@@ -38,17 +38,19 @@ A student assignment management webapp, accessed locally only (not deployed publ
 - Local-only access: do not add public-facing auth/hosting concerns (e.g. OAuth providers, CDN, HTTPS
   termination) — this is a LAN/localhost tool.
 - Multiple courses and multiple workshops per course must both be supported by the data model and routing from the start, not bolted on later.
-- MAC address capture only works for clients on the same local network/subnet as the server (browsers cannot report MAC addresses directly; this requires an ARP-based lookup using the client's IP from the server side).
+- No client IP/MAC capture: an earlier design captured both via ARP lookup, but this required Docker
+  `network_mode: host`, which only works on native Linux and broke `docker compose up --build` on Docker
+  Desktop (macOS/Windows). Deliberately dropped in favor of portability — see Known Limitations.
 
 ## Known Limitations
 
-- **MAC capture requires `network_mode: host`** (Linux host only) — doesn't work on Docker Desktop
-  (macOS/Windows); `client_ip` is always recorded regardless, as a fallback identifier. Cross-subnet, VPN, or
-  router-hopped clients will always yield a `null` MAC. See `README.md` for the Windows WSL2 mirrored-networking
-  workaround.
+- **Device identification is a self-reported student ID + an anonymous `device_id` cookie** (UUID, `httpOnly`,
+  set on first submission via `POST /api/submissions`) — not proof of identity, just a cheap signal for spotting
+  the same browser resubmitting under a different student ID. Nullable if cookies are blocked/cleared; never
+  blocks a submission.
 - **No roster validation** — student ID is a free-text field; a typo creates a distinct submission rather than
   erroring or matching an existing student.
-- **Admin authentication is a single shared HTTP Basic Auth credential** (`src/middleware.ts`, username always
+- **Admin authentication is a single shared HTTP Basic Auth credential** (`src/proxy.ts`, username always
   `admin`, password from `ADMIN_PASSWORD`) — not per-user accounts. Protects `/admin` pages and admin API routes
   (`/api/courses/*`, `/api/workshops/*`, `GET /api/submissions`); the public `POST /api/submissions` (student
   upload) is intentionally exempt. Fails closed if `ADMIN_PASSWORD` is unset.

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
@@ -9,10 +10,11 @@ import {
   FileTooLargeError,
 } from "@/lib/fsStorage";
 import { isValidSlug } from "@/lib/validation";
-import { getClientIp } from "@/lib/net/clientIp";
-import { lookupClientMac } from "@/lib/net/clientMac";
 import { getSettings } from "@/lib/settings";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
+
+const DEVICE_COOKIE_NAME = "device_id";
+const DEVICE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 export async function GET(request: NextRequest) {
   const workshopId = request.nextUrl.searchParams.get("workshopId");
@@ -52,8 +54,7 @@ export async function GET(request: NextRequest) {
         workshop_name: row.workshop_name,
         student_id: row.student_id,
         submitted_at: row.submitted_at,
-        client_ip: row.client_ip,
-        client_mac: row.client_mac,
+        device_id: row.device_id,
         files,
       };
     })
@@ -118,24 +119,33 @@ export async function POST(request: NextRequest) {
     throw err;
   }
 
-  // Best-effort; a failed lookup must never block a submission from being recorded.
-  const clientIp = getClientIp(request);
-  const clientMac = clientIp ? await lookupClientMac(clientIp) : null;
+  // Anonymous device identifier - not proof of identity, just a signal to
+  // spot the same browser resubmitting under a different student ID.
+  // Assigned once and persisted via cookie; never blocks a submission.
+  const deviceId = request.cookies.get(DEVICE_COOKIE_NAME)?.value ?? randomUUID();
 
   await pool.query<ResultSetHeader>(
-    `INSERT INTO submissions (workshop_id, student_id, file_names, submitted_at, client_ip, client_mac)
-     VALUES (?, ?, ?, NOW(), ?, ?)
+    `INSERT INTO submissions (workshop_id, student_id, file_names, submitted_at, device_id)
+     VALUES (?, ?, ?, NOW(), ?)
      ON DUPLICATE KEY UPDATE
        file_names = VALUES(file_names),
        submitted_at = VALUES(submitted_at),
-       client_ip = VALUES(client_ip),
-       client_mac = VALUES(client_mac)`,
-    [workshopRow.workshop_id, studentId, JSON.stringify(fileNames), clientIp, clientMac]
+       device_id = VALUES(device_id)`,
+    [workshopRow.workshop_id, studentId, JSON.stringify(fileNames), deviceId]
   );
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     ok: true,
     fileNames,
     submittedAt: new Date().toISOString(),
   });
+
+  response.cookies.set(DEVICE_COOKIE_NAME, deviceId, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: DEVICE_COOKIE_MAX_AGE,
+    path: "/",
+  });
+
+  return response;
 }
